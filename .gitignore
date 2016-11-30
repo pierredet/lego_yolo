@@ -1,0 +1,5 @@
+# weights
+*.pkl
+
+# python cache
+*.pyc
