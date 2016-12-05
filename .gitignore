@@ -3,3 +3,9 @@
 
 # python cache
 *.pyc
+
+# mac thumbnail
+.DS_Store
+
+# darknet
+/darknet
