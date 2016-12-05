@@ -7,5 +7,6 @@
 # mac thumbnail
 .DS_Store
 
-# darknet
+# darknet and darkflow folders
 /darknet
+/darkflow
