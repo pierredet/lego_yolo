@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# ==============================================================================
 # Created for the MVA course: Object Recognition winter 2016.
 # Project: lego assembly instructions
 # ==============================================================================
@@ -21,6 +24,9 @@ PERSP_FRAC = 0.25 		# maximal fraction for perspective distorsion
 MAX_HUE = 20 			# maximum uniform hue distorsion, range [0 179]
 MAX_SAT = 20			# maximum uniform saturation distorsion, range [0 255]
 MAX_VAL = 20			# maximum uniform value distorsion, range [0 255]
+MAX_CONTRAST_DEV = 0.1	# maximum contrast deviation [1±MAX_CONTRAST_DEV]
+MAX_BRIGHTNESS = 0.1	# maximum birghtness deviation [±255*MAX_BRIGHTNESS]
+MIN_OFFSET = 30 		# minimal margin to border, must be stricly positive
 
 def _make_transparent(im):
 	"""Modify the alpha channel of the image to make all black pixel
@@ -167,42 +173,113 @@ def _random_HSV(im):
 
 	return im
 
-# # define the offset of the overlay and pad the item with zeros
-# x 	   = np.random.randint(imBack.shape[0]-imItem.shape[0])
-# y 	   = np.random.randint(imBack.shape[1]-imItem.shape[1])
-# npad   = ((x,imBack.shape[0]-imItem.shape[0]-x),
-# 		 (y,imBack.shape[1]-imItem.shape[1]-y),(0,0))
-# imItem = np.pad(imItem, pad_width=npad, mode='constant', constant_values=0)
+def _random_contrast_brightness(im):
+	"""Apply a random modification of the contrast and brightness of the image.
+	"""
+	# define the brightness and contrast parameter
+	alpha = (1 - MAX_CONTRAST_DEV) + 2 * MAX_CONTRAST_DEV * np.random.rand(1)[0]
+	beta = int(MAX_BRIGHTNESS * 255 * (- 1 + 2 * np.random.rand(1)[0]))
 
-# # add item to the background
-# imBack[imItem.sum(axis=2)!=0,:] = imItem[imItem.sum(axis=2)!=0,:]
+	# convert to a higher integer precision
+	im = im.astype('int16')
 
+	# apply the random contrast and brightness
+	im[:,:,0:3] = alpha * im[:,:,0:3] + beta
+
+	# make sure the values are still in range
+	im[im[:,:,0]<0,0] = 0
+	im[im[:,:,1]<0,1] = 0
+	im[im[:,:,2]<0,2] = 0
+	im[im[:,:,0]>255,0] = 255
+	im[im[:,:,1]>255,1] = 255
+	im[im[:,:,2]>255,2] = 255
+
+	# apply alpha channel
+	alpha = im[:,:,3]
+	im[:,:,0][alpha==0] = 0
+	im[:,:,1][alpha==0] = 0
+	im[:,:,2][alpha==0] = 0
+
+	# conert back to uint8
+	im = im.astype('uint8')
+
+	return im
+
+def _final_crop(im):
+	"""Crop the image to conserve only the essential part.
+	"""
+	# extract the alpha channel and build the projection on row and col
+	alpha = im[:,:,3]
+	alpha_col = alpha.sum(axis=0)
+	alpha_row = alpha.sum(axis=1)
+
+	# find the minimal and maximal positions
+	col_min = np.argmax(alpha_col>0)
+	row_min = np.argmax(alpha_row>0)
+	col_max = np.argmax(alpha_col[::-1]>0)
+	row_max = np.argmax(alpha_row[::-1]>0)
+
+	# crop the image
+	im = im[row_min:-row_max,col_min:-col_max,:]
+
+	return im
+
+def _item_background_merging(imItem, imBackground, showsteps=False):
+	"""Merge the item image with the background using a random offset.
+	"""
+	# apply all the random transformations to item image
+	if showsteps: cv2.imshow('0 - original',imItem)
+	imItem = _make_transparent(imItem)
+	if showsteps: cv2.imshow('1 - transparent',imItem)
+	imItem = _random_flip(imItem)
+	if showsteps: cv2.imshow('2 - flip',imItem)
+	imItem = _random_rotation(imItem)
+	if showsteps: cv2.imshow('3 - rotation',imItem)
+	imItem = _random_scale(imItem)
+	if showsteps: cv2.imshow('4 - scaling',imItem)
+	imItem = _random_perspective(imItem)
+	if showsteps: cv2.imshow('5 - perspective',imItem)
+	imItem = _random_HSV(imItem)
+	if showsteps: cv2.imshow('6 - hsv',imItem)
+	imItem = _random_contrast_brightness(imItem)
+	if showsteps: cv2.imshow('7 - contrast and brightness',imItem)
+	imItem = _final_crop(imItem)
+	if showsteps: cv2.imshow('8 - final crop',imItem)
+
+
+	# retrieve images dimensions and compute the corresponding translations
+	rowsItem,colsItem = imItem.shape[:2]
+	rowsBack,colsBack = imBackground.shape[:2]
+	trow = np.random.randint(MIN_OFFSET,rowsBack - rowsItem - MIN_OFFSET)
+	tcol = np.random.randint(MIN_OFFSET,colsBack - colsItem - MIN_OFFSET)
+	
+	# combine the two images
+	alpha = imItem[:,:,3]
+	imMerged = imBackground
+	imMerged[trow:trow + rowsItem,tcol:tcol + colsItem,0][alpha>0] = \
+		imItem[:,:,0][alpha>0]
+	imMerged[trow:trow + rowsItem,tcol:tcol + colsItem,1][alpha>0] = \
+		imItem[:,:,1][alpha>0]
+	imMerged[trow:trow + rowsItem,tcol:tcol + colsItem,2][alpha>0] = \
+		imItem[:,:,2][alpha>0]
+
+	# show the different steps
+	if showsteps: 
+		cv2.imshow('9 - merged',imMerged)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
+	
+
+	return imMerged
 
 if __name__ == "__main__":
 	# define both image path and open them
 	pathItem = "item.png"
 	pathBack = "background.jpg"
 	imItem = cv2.imread(pathItem,-1)
-	imBack = cv2.imread(pathBack,-1)
+	imBackground = cv2.imread(pathBack,-1)
 
+	imMerged = _item_background_merging(imItem,imBackground)
 
-	# apply all the transformations
-	imItemTrans = _make_transparent(imItem)
-	imItemFlip = _random_flip(imItemTrans)
-	imItemRot = _random_rotation(imItemFlip)
-	imItemScl = _random_scale(imItemRot)
-	imItemPersp = _random_perspective(imItemScl)
-	imHSV = _random_HSV(imItemPersp)
-
-	# show the different steps
-	cv2.imshow('0 - original',imItem)
-	cv2.imshow('1 - transparent',imItemTrans)
-	cv2.imshow('2 - flip',imItemFlip)
-	cv2.imshow('3 - rotation',imItemRot)
-	cv2.imshow('4 - scaling',imItemScl)
-	cv2.imshow('5 - perspective',imItemPersp)
-	cv2.imshow('6 - hsv',imHSV)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
 
 
