@@ -134,7 +134,7 @@ def _random_perspective(im):
 
     # define the perspective matrix and apply it
     MPersp = cv2.getPerspectiveTransform(pts1,pts2)
-    im = cv2.warpPerspective(im, MPersp, (cols,rows))
+    im = cv2.warpPerspective(im,MPersp,(cols,rows))
 
     # crop the image
     tcol = -min(pts2[0,0],pts2[3,0])
@@ -150,7 +150,7 @@ def _random_HSV(im):
     """Apply a random modification of the image in the HSV space.
     """
     # convert to the Hue-Saturation-Value colorspace
-    imHSV = cv2.cvtColor(im[:,:,0:3], cv2.COLOR_BGR2HSV)
+    imHSV = cv2.cvtColor(im[:,:,0:3],cv2.COLOR_BGR2HSV)
     h = imHSV[:,:,0].astype('int16')
     s = imHSV[:,:,1].astype('int16')
     v = imHSV[:,:,2].astype('int16')
@@ -176,7 +176,7 @@ def _random_HSV(im):
     imHSV[:,:,0] = h[:,:].astype('uint8')
     imHSV[:,:,1] = s[:,:].astype('uint8')
     imHSV[:,:,2] = v[:,:].astype('uint8')
-    imBGR = cv2.cvtColor(imHSV, cv2.COLOR_HSV2BGR)
+    imBGR = cv2.cvtColor(imHSV,cv2.COLOR_HSV2BGR)
 
     # reconstruct the alpha channel
     b,g,r = cv2.split(imBGR)
@@ -239,7 +239,7 @@ def _final_crop(im):
 
     return im
 
-def _item_background_merging(imItem, imBack, showsteps=False):
+def _item_background_merging(imItem,imBack,showsteps=False):
     """Merge the item image with the background using a random offset.
     """
     # apply all the random transformations to item image
@@ -289,13 +289,22 @@ def _item_background_merging(imItem, imBack, showsteps=False):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    return imMerged
+    # explicitely state the return variables for readibility
+    width  = colsBack
+    height = rowsBack
+    depth  = 3
+    xmin   = tcol
+    ymin   = trow
+    xmax   = tcol + colsItem - 1
+    ymax   = trow + rowsItem - 1
+
+    return imMerged,width,height,depth,xmin,ymin,xmax,ymax
 
 def _get_files():
     """Retrieve the background and label name plus their images path."""
 
     # setup the logger
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
     # check that the '/input_images' folder exists
     if not os.path.isdir("input_images"):
@@ -319,11 +328,47 @@ def _get_files():
     for label_dir in labels_dir:
         dump = os.listdir("input_images/" + label_dir)
         dump = [l for l in dump if l.lower().endswith(
-            ('.png','.jpg', '.jpeg'))]
+            ('.png','.jpg','.jpeg'))]
         logging.info("%d images loaded for %s"%(len(dump),label_dir))
         imPaths[label_dir] = dump
 
     return imPaths
+
+
+def _generate_xml(filename,width,height,depth,label,xmin,ymin,xmax,ymax):
+    """ Generate the XML file corresponding to the randomly generated image.
+    """
+    xml = """<annotation>
+        <folder>VOC2012</folder>
+        <filename>%s</filename>
+        <source>
+            <database>MVA RecVis2016 Pierre and Leo</database>
+            <annotation>Automatic generation</annotation>
+            <image>Photographies</image>
+        </source>
+        <size>
+            <width>%d</width>
+            <height>%d</height>
+            <depth>%d</depth>
+        </size>
+        <segmented>0</segmented>
+        <object>
+            <name>%s</name>
+            <pose>Unspecified</pose>
+            <truncated>0</truncated>
+            <difficult>0</difficult>
+            <bndbox>
+                <xmin>%d</xmin>
+                <ymin>%d</ymin>
+                <xmax>%d</xmax>
+                <ymax>%d</ymax>
+            </bndbox>
+        </object>
+    </annotation>"""%(filename,
+        width,height,depth,label,xmin,ymin,xmax,ymax)
+
+    return xml
+
 
 def generate_data(n):
     """Generate n images with a random modification of the item image plus a 
@@ -331,7 +376,7 @@ def generate_data(n):
     """
 
     # setup the logger
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
     logging.info("Beginning dataset generation")
 
     # retrieve the images path
@@ -368,10 +413,16 @@ def generate_data(n):
 
             # generate an unique ID
             uID = str(uuid.uuid4())
+            filename = uID
+
+            # generate the xml
+            xml = _generate_xml(filename,width,height,depth,class_label,
+                xmin,ymin,xmax,ymax):
 
             # save the image
-            cv2.imwrite(os.path.join("output_images",uID + ".jpg"),imMerged)
-            logging.info("image saved as %s",uID + ".jpg")
+            cv2.imwrite(os.path.join("output_images",filename + ".jpg"),
+                imMerged)
+            logging.info("image saved as %s"%(filename + ".jpg"))
             
     return
     
