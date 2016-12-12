@@ -14,7 +14,7 @@ PASCAL VOC2012 style.
 To run the script you have to :
     1. Move all background and label images in the following folders:
         - background:     '/input_images/background/'
-        - item:            '/input_images/<label name>/'
+        - item:           '/input_images/<label name>/'
     2. Indicate the number of images you want for each label and run the script
     using the command line. For instance to generate 1000 images of each label:
         python generate_data.py --n 1000
@@ -29,12 +29,12 @@ import sys
 import cv2
 import numpy as np
 import logging
-import glob
+import uuid
 
 # define the constant that we be used to generate the dataset
 BGRD_COL = [0,0,0,255]  # background color blue green red alpha
 MIN_SCALE = 0.5         # minimum value for scaling
-MAX_SCALE = 1.5         # maximum value for scaling
+MAX_SCALE = 2           # maximum value for scaling
 PERSP_FRAC = 0.25       # maximal fraction for perspective distorsion
 MAX_HUE = 20            # maximum uniform hue distorsion, range [0 179]
 MAX_SAT = 20            # maximum uniform saturation distorsion, range [0 255]
@@ -42,45 +42,6 @@ MAX_VAL = 20            # maximum uniform value distorsion, range [0 255]
 MAX_CONTRAST_DEV = 0.1  # maximum contrast deviation [1±MAX_CONTRAST_DEV]
 MAX_BRIGHTNESS = 0.1    # maximum birghtness deviation [±255*MAX_BRIGHTNESS]
 MIN_OFFSET = 30         # minimal margin to border, must be stricly positive
-
-def _get_files():
-    """Retrieve the background and label name plus their images path."""
-
-    # setup the logger
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
-
-    # check that the '/input_images' folder exists
-    if not os.path.isdir("input_images"):
-        logging.info("Directory '/input_images/' not found.")
-        sys.exit(1)
-    
-    # consider only directories that are not hidden
-    os.chdir("input_images")
-    dump = os.listdir('.')
-    dump = [l for l in dump if os.path.isdir(l)]
-    labels_dir = [l for l in dump if l[0]!="."]
-
-    # check that the '/input_images/background' folder exists
-    if not os.path.isdir("background"):
-        logging.info("Directory '/input_images/background'"
-            " not found.")
-        sys.exit(1)
-    
-    # consider only supported images format
-    os.chdir("background")
-    dump = os.listdir('.')
-    imBacks = [l for l in dump if l.lower().endswith(('.png', '.jpg', '.jpeg'))]
-
-    print imBacks
-
-
-    # os.chdir(ANN)
-    # annotations = os.listdir('.')
-    # annotations = [file for file in annotations if '.xml' in file]
-    # size = len(os.listdir('.'))
-
-    return 
-
 
 def _make_transparent(im):
     """Modify the alpha channel of the image to make all black pixel
@@ -304,12 +265,17 @@ def _item_background_merging(imItem, imBack, showsteps=False):
     # retrieve images dimensions and compute the corresponding translations
     rowsItem,colsItem = imItem.shape[:2]
     rowsBack,colsBack = imBack.shape[:2]
+    # resize if the image is too big
+    while (MIN_OFFSET>=rowsBack - rowsItem - MIN_OFFSET) or \
+        (MIN_OFFSET>=colsBack - colsItem - MIN_OFFSET):
+        imItem = cv2.resize(imItem,(0,0),fx=0.75,fy=0.75)
+        rowsItem,colsItem = imItem.shape[:2]
     trow = np.random.randint(MIN_OFFSET,rowsBack - rowsItem - MIN_OFFSET)
     tcol = np.random.randint(MIN_OFFSET,colsBack - colsItem - MIN_OFFSET)
     
     # combine the two images
     alpha = imItem[:,:,3]
-    imMerged = imBack
+    imMerged = imBack.copy()
     imMerged[trow:trow + rowsItem,tcol:tcol + colsItem,0][alpha>0] = \
         imItem[:,:,0][alpha>0]
     imMerged[trow:trow + rowsItem,tcol:tcol + colsItem,1][alpha>0] = \
@@ -325,13 +291,93 @@ def _item_background_merging(imItem, imBack, showsteps=False):
 
     return imMerged
 
+def _get_files():
+    """Retrieve the background and label name plus their images path."""
+
+    # setup the logger
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+
+    # check that the '/input_images' folder exists
+    if not os.path.isdir("input_images"):
+        logging.info("Directory '/input_images/' not found")
+        sys.exit(1)
+    
+    # consider only directories that are not hidden
+    # os.chdir("input_images")
+    dump = os.listdir("input_images")
+    dump = [l for l in dump if os.path.isdir("input_images/" + l)]
+    labels_dir = [l for l in dump if l[0]!="."]
+
+    # check that the '/input_images/background' folder exists
+    if not os.path.isdir("input_images/background"):
+        logging.info("Directory '/input_images/background'"
+            " not found")
+        sys.exit(1)
+
+    # retrieve item directories and pictures and store them in a dictionnary
+    imPaths = {}
+    for label_dir in labels_dir:
+        dump = os.listdir("input_images/" + label_dir)
+        dump = [l for l in dump if l.lower().endswith(
+            ('.png','.jpg', '.jpeg'))]
+        logging.info("%d images loaded for %s"%(len(dump),label_dir))
+        imPaths[label_dir] = dump
+
+    return imPaths
+
+def generate_data(n):
+    """Generate n images with a random modification of the item image plus a 
+    random selection of background.
+    """
+
+    # setup the logger
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+    logging.info("Beginning dataset generation")
+
+    # retrieve the images path
+    imPaths = _get_files()
+
+    # loop through all item class and generate the images
+    for item in imPaths:
+        if item == "background": continue
+
+        # select the random selection of item and background
+        rndmBack = np.random.randint(len(imPaths["background"]),size = n)
+        rndmItem = np.random.randint(len(imPaths[item]),size = n)
+
+        # loop through all selection
+        for i in np.arange(0,n):
+            # retrieve the path
+            pathBack = imPaths["background"][rndmBack[i]]
+            pathBack = os.path.join("input_images","background",pathBack)
+            pathItem = imPaths[item][rndmItem[i]]
+            pathItem = os.path.join("input_images",item,pathItem)
+
+            # open the images and generate the new one
+            imItem = cv2.imread(pathItem,-1)
+            imBack = cv2.imread(pathBack,-1)
+            imMerged = _item_background_merging(imItem,imBack)
+            
+            # create the output directory if it doesn't exists
+            if not os.path.isdir("output_images"):
+                os.mkdir("output_images")
+                logging.info("Directory 'output_images' created")
+            if not os.path.isdir("output_annotations"):
+                os.mkdir("output_annotations")
+                logging.info("Directory 'output_annotations' created")
+
+            # generate an unique ID
+            uID = str(uuid.uuid4())
+
+            # save the image
+            cv2.imwrite(os.path.join("output_images",uID + ".jpg"),imMerged)
+            logging.info("image saved as %s",uID + ".jpg")
+            
+    return
+    
+
 if __name__ == "__main__":
-    # define both image path and open them
-    pathItem = "item.png"
-    pathBack = "background.jpg"
-    imItem = cv2.imread(pathItem,-1)
-    imBack = cv2.imread(pathBack,-1)
+    # define the number of images to generate and run the script
+    n = 1
+    generate_data(n)
 
-    # imMerged = _item_background_merging(imItem,imBack)
-
-    _get_files()
