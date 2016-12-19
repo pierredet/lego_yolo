@@ -24,7 +24,7 @@ def launch_training(cfg_file):
     epoch = cfg.getint('epoch')
     lr = cfg.getfloat('learning_rate')
     save_iter = cfg.getint('save_iter')
-    
+
     # load detection metaparameter from the config file
     meta = {}
     for key, value in cfg.items('detection'):
@@ -63,7 +63,7 @@ def launch_training(cfg_file):
 
         if i == 1:
             assert set(list(datum)) == set(list(self.placeholders)), \
-               'Feed and placeholders of loss op mismatched'
+                'Feed and placeholders of loss op mismatched'
 
         feed_pair = [(self.placeholders[k], datum[k]) for k in datum]
         feed_dict = {holder: val for (holder, val) in feed_pair}
@@ -80,13 +80,13 @@ def launch_training(cfg_file):
         #     print np.sum(f)
         # assert 0
         if loss_mva is None:
-                    loss_mva = loss
+            loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
         # counter from now on
         step_now = self.FLAGS.load + i
         args = [step_now, loss, loss_mva]
         print 'step {} - loss {} - moving ave loss {}'.format(*args)
-        if i % (save_iter/batch) == 0 or i == total:
+        if i % (save_iter / batch) == 0 or i == total:
             ckpt = os.path.join(self.FLAGS.backup, '{}-{}'.format(
                 model, step_now))
             print 'Checkpoint at step {}'.format(step_now)
