@@ -1,11 +1,13 @@
 [general]
 ann_path=pascal/VOCdevkit/annex
-labels=un dex trois
+# path from which to load pascal yolo weights
+ckpt_path=ckpt/yolo-tiny-664.meta
+labels=un deux trois
 exclusive=True
 epoch=1000
 learning_rate=1e-5
 # save every iter
-save_iter=10000:q
+save_iter=10000
 
 [net]
 batch=64
@@ -20,10 +22,11 @@ learning_rate=0.0001
 policy=steps
 steps=20,40,60,80,20000,30000
 scales=5,5,2,2,.1,.1
-max_batches = 40000
+max_batches=40000
 
 [detection]
-classes=20
+threshold=0.1
+classes=12
 coords=4
 rescore=1
 side=7

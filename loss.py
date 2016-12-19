@@ -5,8 +5,9 @@ together they support the pipeline:
     annotation -> minibatch -> loss evaluation -> training
 namely,
 loss() basically build the loss layer of the net, namely,
-            returns the corresponding placeholders for feed values of this loss layer
-            as well as loss & train_op built from these placeholders and net.out
+            returns the corresponding placeholders for feed values of this
+            loss layer as well as loss & train_op built from these placeholders
+            and net.out
 """
 import tensorflow.contrib.slim as slim
 import cPickle as pickle
@@ -29,7 +30,7 @@ def loss(net_out, m):
     snoob = m['noobject_scale']
     scoor = m['coord_scale']
     S, B, C = m['side'], m['num'], m['classes']
-    SS = S * S # number of grid cells
+    SS = S * S  # number of grid cells
 
     print '{} loss hyper-parameters:'.format(m['model'])
     print '\tside    = {}'.format(m['side'])
@@ -54,26 +55,26 @@ def loss(net_out, m):
     _botright = tf.placeholder(tf.float32, size2 + [2])
 
     placeholders = {
-        'probs':_probs, 'confs':_confs, 'coord':_coord,
-        'proid':_proid, 'conid':_conid, 'cooid':_cooid,
-        'areas':_areas, 'upleft':_upleft, 'botright':_botright
+        'probs': _probs, 'confs': _confs, 'coord': _coord,
+        'proid': _proid, 'conid': _conid, 'cooid': _cooid,
+        'areas': _areas, 'upleft': _upleft, 'botright': _botright
     }
 
     # Extract the coordinate prediction from net.out
     coords = net_out[:, SS * (C + B):]
     coords = tf.reshape(coords, [-1, SS, B, 4])
-    wh = tf.pow(coords[:,:,:,2:4], 2) * S # unit: grid cell
-    area_pred = wh[:,:,:,0] * wh[:,:,:,1] # unit: grid cell^2
-    centers = coords[:,:,:,0:2] # [batch, SS, B, 2]
-    floor = centers - (wh * .5) # [batch, SS, B, 2]
-    ceil  = centers + (wh * .5) # [batch, SS, B, 2]
+    wh = tf.pow(coords[:, :, :, 2:4], 2) * S  # unit: grid cell
+    area_pred = wh[:, :, :, 0] * wh[:, :, :, 1]  # unit: grid cell^2
+    centers = coords[:, :, :, 0:2]  # [batch, SS, B, 2]
+    floor = centers - (wh * .5)  # [batch, SS, B, 2]
+    ceil = centers + (wh * .5)  # [batch, SS, B, 2]
 
     # calculate the intersection areas
-    intersect_upleft   = tf.maximum(floor, _upleft)
-    intersect_botright = tf.minimum(ceil , _botright)
+    intersect_upleft = tf.maximum(floor, _upleft)
+    intersect_botright = tf.minimum(ceil, _botright)
     intersect_wh = intersect_botright - intersect_upleft
     intersect_wh = tf.maximum(intersect_wh, 0.0)
-    intersect = tf.mul(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1])
+    intersect = tf.mul(intersect_wh[:, :, :, 0], intersect_wh[:, :, :, 1])
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
     iou = tf.div(intersect, _areas + area_pred - intersect)
@@ -103,12 +104,11 @@ def loss(net_out, m):
     loss = tf.mul(loss, wght)
     loss = tf.reduce_sum(loss, 1)
     loss = .5 * tf.reduce_mean(loss)
-    
+
     # make the loss retrievable
     tf.add_to_collection("loss", loss)
-    
+
     # adding a summary for Tensorboard
     tf.summary.scalar('training_loss', loss)
     tf.summary.scalar('confs_mean', tf.reduce_mean(confs))
     return placeholders, loss
-

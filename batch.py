@@ -1,5 +1,5 @@
 import numpy as np
-from test import preprocess
+from image_processing import preprocess
 
 
 def shuffle(data, batch, epoch, meta):
@@ -18,7 +18,7 @@ def shuffle(data, batch, epoch, meta):
 	total = epoch * batch_per_epoch
 	yield total
 
-	for i in range(self.FLAGS.epoch):
+	for i in range(epoch):
 		print 'EPOCH {}'.format(i + 1)
 		shuffle_idx = perm(np.arange(size))
 		for b in range(batch_per_epoch): 
