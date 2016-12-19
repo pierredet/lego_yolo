@@ -51,6 +51,20 @@ def postprocess(net_out, im, meta, save=True):
     """
     Takes net output, draw predictions, save to disk
     """
+
+    def _to_color(indx, base):
+        # return (b, r, g) tuple
+        base2 = base * base
+        b = 2 - indx / base2
+        r = 2 - (indx % base2) / base
+        g = 2 - (indx % base2) % base
+        return (b * 127, r * 127, g * 127)
+    colors = list()
+    base = int(np.ceil(pow(meta['classes'], 1. / 3)))
+    for x in range(len(meta['labels'])):
+        colors += [_to_color(x, base)]
+    meta['colors'] = colors
+
     threshold, sqrt = meta['threshold'], meta['sqrt'] + 1
     C, B, S = meta['classes'], meta['num'], meta['side']
     colors, labels = meta['colors'], meta['labels']
@@ -103,7 +117,7 @@ def postprocess(net_out, im, meta, save=True):
         max_indx = np.argmax(b.probs)
         max_prob = b.probs[max_indx]
         if max_prob > threshold:
-            label = self.meta['labels'][max_indx]
+            label = meta['labels'][max_indx]
             left = int((b.x - b.w / 2.) * w)
             right = int((b.x + b.w / 2.) * w)
             top = int((b.y - b.h / 2.) * h)

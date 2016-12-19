@@ -106,7 +106,7 @@ def loss(net_out, m):
     loss = .5 * tf.reduce_mean(loss)
 
     # make the loss retrievable
-    tf.add_to_collection("loss", loss)
+    # tf.add_to_collection("loss", loss)
 
     # adding a summary for Tensorboard
     tf.summary.scalar('training_loss', loss)

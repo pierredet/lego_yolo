@@ -32,6 +32,10 @@ def launch_training(cfg_file):
             meta[key] = float(value)
         else:
             meta[key] = int(value)
+    meta['inp_size'] = (cfg.getint('height'), cfg.getint('width'),
+                        cfg.getint('channel'))
+    meta['labels'] = labels
+    meta['lr'] = lr
 
     # First check if there is a corresponding annotation
     # parse to your config
@@ -43,9 +47,13 @@ def launch_training(cfg_file):
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
     sess = tf.Session()
+    # get pthe revious network and define our new loss on top
     placeholders, loss = graph_construction(sess, ckpt_path, meta)
-    # TODO load from checkpoint here
-    # define train_op loss sess
+
+    # build train_op
+    optimizer = tf.train.RMSPropOptimizer(meta['lr'])
+    gradients = optimizer.compute_gradients(loss)
+    train_op = optimizer.apply_gradients(gradients)
 
     # actual training loop
     batches = shuffle(data, batch, epoch, meta)
@@ -62,10 +70,10 @@ def launch_training(cfg_file):
         x_batch, datum = packet
 
         if i == 1:
-            assert set(list(datum)) == set(list(self.placeholders)), \
+            assert set(list(datum)) == set(list(placeholders)), \
                 'Feed and placeholders of loss op mismatched'
 
-        feed_pair = [(self.placeholders[k], datum[k]) for k in datum]
+        feed_pair = [(placeholders[k], datum[k]) for k in datum]
         feed_dict = {holder: val for (holder, val) in feed_pair}
         for k in self.feed:
             feed_dict[k] = self.feed[k]
