@@ -26,7 +26,7 @@ def parse_to_pkl(labels, filename, ann_path, exclusive=False):
     dump the output to a pkl in filename
     exclusive : boolean flags to include other classes or not
     """
-    dumps = pascal_voc_clean(ann_path, labels, exclusive)
+    dumps = pascal_voc_clean_xml(ann_path, labels, exclusive)
 
     with open(filename, 'wb') as f:
         pkl.dump([dumps], f, protocol=-1)

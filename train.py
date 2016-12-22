@@ -6,6 +6,7 @@ from utils.pascal_voc_clean_xml import parse_to_pkl
 
 import cPickle as pkl
 import sys
+import os
 import ConfigParser
 
 import tensorflow as tf
@@ -15,15 +16,15 @@ def launch_training(cfg_file):
     cfg = ConfigParser.ConfigParser()
     cfg.read(cfg_file)
 
-    ann_path = cfg.get('ann_path')
-    ckpt_path = cfg.get('ckpt_path')
-    labels = cfg.get('labels').split()
-    exclusive = cfg.getboolean('exclusive')
+    ann_path = cfg.get('general', 'ann_path')
+    ckpt_path = cfg.get('general', 'ckpt_path')
+    labels = cfg.get('general', 'labels').split()
+    exclusive = cfg.getboolean('general', 'exclusive')
 
-    batch = cfg.getint('batch')
-    epoch = cfg.getint('epoch')
-    lr = cfg.getfloat('learning_rate')
-    save_iter = cfg.getint('save_iter')
+    batch = cfg.getint('net', 'batch')
+    epoch = cfg.getint('general', 'epoch')
+    lr = cfg.getfloat('general', 'learning_rate')
+    save_iter = cfg.getint('general', 'save_iter')
 
     # load detection metaparameter from the config file
     meta = {}
@@ -32,15 +33,16 @@ def launch_training(cfg_file):
             meta[key] = float(value)
         else:
             meta[key] = int(value)
-    meta['inp_size'] = (cfg.getint('height'), cfg.getint('width'),
-                        cfg.getint('channel'))
+    meta['inp_size'] = (cfg.getint('net', 'height'), cfg.getint('net', 'width'),
+                        cfg.getint('net', 'channels'))
     meta['labels'] = labels
     meta['lr'] = lr
+    meta['model'] = ann_path.split('/')[-1]
 
     # First check if there is a corresponding annotation
     # parse to your config
-    ann_parsed = os.path.join(ann, cfg_file.split('.')[0] + '.pkl')
-    if os.exists(ann_parsed):
+    ann_parsed = os.path.join(ann_path, cfg_file.split('.')[0] + '.pkl')
+    if os.path.exists(ann_parsed):
         f = open(ann_parsed, 'rb')
         data = pkl.load(f)
     else:
@@ -101,4 +103,5 @@ def launch_training(cfg_file):
             self.saver.save(sess, ckpt)
 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
+    launch_training(sys.argv[1])
