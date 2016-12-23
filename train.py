@@ -38,17 +38,18 @@ def launch_training(cfg_file):
     meta['labels'] = labels
     meta['lr'] = lr
     meta['model'] = ann_path.split('/')[-1]
+    meta['ann_path'] = ann_path
 
     # First check if there is a corresponding annotation
     # parse to your config
     ann_parsed = os.path.join(ann_path, cfg_file.split('.')[0] + '.pkl')
     if os.path.exists(ann_parsed):
         f = open(ann_parsed, 'rb')
-        data = pkl.load(f)
+        data = pkl.load(f)[0]
     else:
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
-    sess = tf.Session()
+    sess = tf.InteractiveSession()  # necessary since we edit the graph
     # get pthe revious network and define our new loss on top
     placeholders, loss = graph_construction(sess, ckpt_path, meta)
 
@@ -65,7 +66,7 @@ def launch_training(cfg_file):
         if i == 0:
             total = packet
             args = [lr, batch]
-            args += [epoch, save]
+            args += [epoch, save_iter]
             print "training params", args
             continue
 

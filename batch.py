@@ -1,8 +1,10 @@
 import numpy as np
 from image_processing import preprocess
 
+import os
+from copy import deepcopy
 
-def shuffle(data, batch, epoch, meta):
+def shuffle(data, batch_size, epoch, meta):
     """
     data, parsed annotations (stored in a pkl)
     Call the specific framework to parse annotations, then use the parsed
@@ -12,18 +14,18 @@ def shuffle(data, batch, epoch, meta):
     size = len(data)
 
     print 'Dataset of {} instance(s)'.format(size)
-    if batch > size:
+    if batch_size > size:
         print "batch bigger than size !"
-    batch_per_epoch = int(size / batch)
+    batch_per_epoch = int(size / batch_size)
     total = epoch * batch_per_epoch
     yield total
 
     for i in range(epoch):
         print 'EPOCH {}'.format(i + 1)
-        shuffle_idx = perm(np.arange(size))
+        shuffle_idx = np.random.permutation(np.arange(size))
         for b in range(batch_per_epoch):
-            end_idx = (b + 1) * batch
-            start_idx = b * batch
+            end_idx = (b + 1) * batch_size
+            start_idx = b * batch_size
             # two yieldee
             x_batch = list()
             feed_batch = dict()
@@ -62,7 +64,8 @@ def batch(chunk, meta):
     jpg = chunk[0]
     w, h, allobj_ = chunk[1]
     allobj = deepcopy(allobj_)
-    path = os.path.join(meta['ann_path'], jpg)
+    par_path =os.path.abspath(os.path.join(meta['ann_path'], os.pardir))
+    path = os.path.join(par_path, "images", jpg, ".jpg")
     img = preprocess(path, meta, allobj)
 
     # Calculate regression target
