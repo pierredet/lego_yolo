@@ -50,9 +50,9 @@ def launch_training(cfg_file):
     else:
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
-    sess = tf.InteractiveSession()  # necessary since we edit the graph
-    # get pthe revious network and define our new loss on top
-    placeholders, loss, net_out = graph_construction(sess, ckpt_path, meta)
+    sess = tf.Session()
+    placeholders, loss, net_out = graph_construction(sess, meta,
+                                                     pkl_path="weight.pkl")
 
     # build train_op
     optimizer = tf.train.RMSPropOptimizer(meta['lr'])

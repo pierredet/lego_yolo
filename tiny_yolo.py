@@ -2,9 +2,6 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
 
-
-
-
 def conv_weights(name, shape):
     W = tf.Variable(tf.zeros(list(shape)), name=name + "kernel")
     b = tf.Variable(tf.zeros([shape[-1]]), name=name + "biaises")
@@ -40,7 +37,6 @@ def fully_connected(inp, weights, biases, name):
 def create_graph(inp_size):
     all_vars = []
 
-    inp_size = [None] + meta['inp_size']
     inp = tf.placeholder(tf.float32, inp_size, 'input')
 
     feed = dict()  # other placeholders
@@ -126,12 +122,18 @@ def create_graph(inp_size):
     temp = tf.maximum(.1 * temp, temp, name="27_leaky")
 
     # Load  |  Yep!  | drop                             | (?, 4096)
-    temp = tf.nn.dropout(temp, self.lay.h['pdrop'], name="28_drop")
+    # dropout
+    keep_prob = tf.placeholder(tf.float32)
+    temp = tf.nn.dropout(temp, keep_prob, name="28_drop")
     # Init  |  Yep!  | full 4096 x 1470  linear         | (?, 1470)
 
-    weights, biases = full_weights("30-connected/", (4096, 735))
+    # TRANSFER LEARNING HERE
+    weights = tf.Variable(tf.truncated_normal([4096, 735], stddev=0.1),
+                          name="30-connected/weights")
+    biases = tf.Variable(tf.constant(0.1, shape=[735]),
+                         name="30-connected/biases")
     all_vars.append(weights)
     all_vars.append(biases)
     temp = fully_connected(temp, weights, biases, "29_fully_connected")
 
-    return temp, all_vars, inp
+    return temp, all_vars, [inp, keep_prob]
