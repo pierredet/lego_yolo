@@ -8,6 +8,7 @@ import cPickle as pkl
 import sys
 import os
 import ConfigParser
+import numpy as np
 
 import tensorflow as tf
 
@@ -33,8 +34,8 @@ def launch_training(cfg_file):
             meta[key] = float(value)
         else:
             meta[key] = int(value)
-    meta['inp_size'] = (cfg.getint('net', 'height'), cfg.getint('net', 'width'),
-                        cfg.getint('net', 'channels'))
+    meta['inp_size'] = [cfg.getint('net', 'height'), cfg.getint('net', 'width'),
+                        cfg.getint('net', 'channels')]
     meta['labels'] = labels
     meta['lr'] = lr
     meta['model'] = ann_path.split('/')[-1]
@@ -51,7 +52,7 @@ def launch_training(cfg_file):
 
     sess = tf.InteractiveSession()  # necessary since we edit the graph
     # get pthe revious network and define our new loss on top
-    placeholders, loss = graph_construction(sess, ckpt_path, meta)
+    placeholders, loss, net_out = graph_construction(sess, ckpt_path, meta)
 
     # build train_op
     optimizer = tf.train.RMSPropOptimizer(meta['lr'])
@@ -71,16 +72,17 @@ def launch_training(cfg_file):
             continue
 
         x_batch, datum = packet
-
+        datum['input'] = x_batch
+        import pdb; pdb.set_trace()
+        sess.run([net_out],{placeholder['input']: x_batch})
         if i == 1:
             assert set(list(datum)) == set(list(placeholders)), \
                 'Feed and placeholders of loss op mismatched'
-
         feed_pair = [(placeholders[k], datum[k]) for k in datum]
         feed_dict = {holder: val for (holder, val) in feed_pair}
-        for k in self.feed:
-            feed_dict[k] = self.feed[k]
-        feed_dict[self.inp] = x_batch
+        # for k in self.feed:
+        #     feed_dict[k] = self.feed[k]
+        import pdb; pdb.set_trace()
 
         _, loss, summary = sess.run([train_op, loss], feed_dict)
 

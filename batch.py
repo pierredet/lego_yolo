@@ -65,7 +65,7 @@ def batch(chunk, meta):
     w, h, allobj_ = chunk[1]
     allobj = deepcopy(allobj_)
     par_path =os.path.abspath(os.path.join(meta['ann_path'], os.pardir))
-    path = os.path.join(par_path, "images", jpg, ".jpg")
+    path = os.path.join(par_path, "images", jpg + ".jpg")
     img = preprocess(path, meta, allobj)
 
     # Calculate regression target
