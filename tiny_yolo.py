@@ -23,7 +23,7 @@ def convolutional_layer(inp, kernel, biases, stride, pad, name):
 
 
 def max_pool(inp, ksize, stride, name):
-    return = tf.nn.max_pool(
+    return tf.nn.max_pool(
         inp, padding='SAME',
         ksize=[1] + [ksize] * 2 + [1],
         strides=[1] + [stride] * 2 + [1],
@@ -31,7 +31,7 @@ def max_pool(inp, ksize, stride, name):
 
 
 def fully_connected(inp, weights, biases, name):
-    inp = tf.nn.xw_plus_b(inp, weights, biases,	name)
+    return  tf.nn.xw_plus_b(inp, weights, biases,	name)
 
 
 def create_graph(inp_size):
@@ -50,7 +50,7 @@ def create_graph(inp_size):
     temp = tf.maximum(.1 * temp, temp, name="2_leaky")
 
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 224, 224, 16)
-    temp = max_pool(temp, 2, 0, "3_maxpool")
+    temp = max_pool(temp, 2, 2, "3_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 224, 224, 32)
     kernel, biases = conv_weights("4-convolutional/", (3, 3, 16, 32))
     all_vars.append(kernel)
@@ -58,7 +58,7 @@ def create_graph(inp_size):
     temp = convolutional_layer(temp, kernel, biases, 1, 1, "4-convolutionnal")
     temp = tf.maximum(.1 * temp, temp, name="5_leaky")
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 112, 112, 32)
-    temp = max_pool(temp, 2, 0, "6_maxpool")
+    temp = max_pool(temp, 2, 2, "6_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 112, 112, 64)
     kernel, biases = conv_weights("7-convolutional/", (3, 3, 32, 64))
     all_vars.append(kernel)
@@ -66,7 +66,7 @@ def create_graph(inp_size):
     temp = convolutional_layer(temp, kernel, biases, 1, 1, "7-convolutionnal")
     temp = tf.maximum(.1 * temp, temp, name="8_leaky")
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 56, 56, 64)
-    temp = max_pool(temp, 2, 0, "9_maxpool")
+    temp = max_pool(temp, 2, 2, "9_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 56, 56, 128)
     kernel, biases = conv_weights("10-convolutional/", (3, 3, 64, 128))
     all_vars.append(kernel)
@@ -74,7 +74,7 @@ def create_graph(inp_size):
     temp = convolutional_layer(temp, kernel, biases, 1, 1, "10-convolutionnal")
     temp = tf.maximum(.1 * temp, temp, name="11_leaky")
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 28, 28, 128)
-    temp = max_pool(temp, 2, 0, "12_maxpool")
+    temp = max_pool(temp, 2, 2, "12_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 28, 28, 256)
     kernel, biases = conv_weights("13-convolutional/", (3, 3, 128, 256))
     all_vars.append(kernel)
@@ -82,7 +82,7 @@ def create_graph(inp_size):
     temp = convolutional_layer(temp, kernel, biases, 1, 1, "13-convolutionnal")
     temp = tf.maximum(.1 * temp, temp, name="14_leaky")
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 14, 14, 256)
-    temp = max_pool(temp, 2, 0, "15_maxpool")
+    temp = max_pool(temp, 2, 2, "15_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 14, 14, 512)
     kernel, biases = conv_weights("16-convolutional/", (3, 3, 256, 512))
     all_vars.append(kernel)
@@ -90,7 +90,7 @@ def create_graph(inp_size):
     temp = convolutional_layer(temp, kernel, biases, 1, 1, "16-convolutionnal")
     temp = tf.maximum(.1 * temp, temp, name="17_leaky")
     # Load  |  Yep!  | maxp 2x2p0_2                     | (?, 7, 7, 512)
-    temp = max_pool(temp, 2, 0, "18_maxpool")
+    temp = max_pool(temp, 2, 2, "18_maxpool")
     # Init  |  Yep!  | conv 3x3p1_1    leaky            | (?, 7, 7, 1024)
     kernel, biases = conv_weights("19-convolutional/", (3, 3, 512, 1024))
     all_vars.append(kernel)
