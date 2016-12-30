@@ -51,13 +51,13 @@ def launch_training(cfg_file):
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
     sess = tf.Session()
-    placeholders, loss, net_out = graph_construction(sess, meta,
+    placeholders, loss_op, train_op = graph_construction(sess, meta,
                                                      pkl_path="weight.pkl")
 
     # build train_op
-    optimizer = tf.train.RMSPropOptimizer(meta['lr'])
-    gradients = optimizer.compute_gradients(loss)
-    train_op = optimizer.apply_gradients(gradients)
+    #optimizer = tf.train.RMSPropOptimizer(meta['lr'])
+    #gradients = optimizer.compute_gradients(loss)
+    #train_op = optimizer.apply_gradients(gradients)
 
     # actual training loop
     batches = shuffle(data, batch, epoch, meta)
@@ -73,37 +73,29 @@ def launch_training(cfg_file):
 
         x_batch, datum = packet
         datum['input'] = x_batch
-        import pdb; pdb.set_trace()
-        sess.run([net_out],{placeholder['input']: x_batch})
+        datum['keep_prob'] = 0.5
         if i == 1:
             assert set(list(datum)) == set(list(placeholders)), \
                 'Feed and placeholders of loss op mismatched'
         feed_pair = [(placeholders[k], datum[k]) for k in datum]
         feed_dict = {holder: val for (holder, val) in feed_pair}
-        # for k in self.feed:
-        #     feed_dict[k] = self.feed[k]
-        import pdb; pdb.set_trace()
 
-        _, loss, summary = sess.run([train_op, loss], feed_dict)
+        _, loss = sess.run([train_op, loss_op], feed_dict)
 
-        train_writer.add_summary(summary, i)
+        #train_writer.add_summary(summary, i)
 
-        loss = fetched[1]
-        # for f in fetched[2:]:
-        #     print np.sum(f)
-        # assert 0
         if loss_mva is None:
             loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
         # counter from now on
-        step_now = self.FLAGS.load + i
+        step_now = 0 + i
         args = [step_now, loss, loss_mva]
         print 'step {} - loss {} - moving ave loss {}'.format(*args)
         if i % (save_iter / batch) == 0 or i == total:
             ckpt = os.path.join(self.FLAGS.backup, '{}-{}'.format(
                 model, step_now))
             print 'Checkpoint at step {}'.format(step_now)
-            self.saver.save(sess, ckpt)
+            saver.save(sess, ckpt)
 
 
 if __name__ == '__main__':

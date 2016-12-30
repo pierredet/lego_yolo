@@ -12,6 +12,11 @@ def graph_construction(sess, meta, pkl_path=None):
     placeholders, loss_layer = loss(net_out, meta)
     placeholders['input'] = inp
     placeholders['keep_prob'] = keep_prob
+    
+    # construct the training loop
+    optimizer = tf.train.RMSPropOptimizer(meta['lr'])
+    gradients = optimizer.compute_gradients(loss_layer)
+    train_op = optimizer.apply_gradients(gradients)
 
     sess.run(tf.global_variables_initializer())
 
@@ -21,8 +26,8 @@ def graph_construction(sess, meta, pkl_path=None):
         weights = []
         with open(pkl_path, 'rf') as f:
             weights = pkl.load(f)
-        for weight, i in enumerate(weights):
-            if i != len(weights)-1:
+        for i, weight in enumerate(weights):
+            if i < len(weights)-2:
                 all_vars[i].assign(weight).eval(session=sess)
 
-    return placeholders, loss_layer, net_out
+    return placeholders, loss_layer, train_op
