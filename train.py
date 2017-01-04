@@ -1,9 +1,9 @@
 from batch import shuffle, batch
 from loss import loss
-from load import load
+from load import load_training
 
 from utils.pascal_voc_clean_xml import parse_to_pkl
-from utils.read_config import read_cfg(cfg_file)
+from utils.read_config import read_cfg
 
 import cPickle as pkl
 import sys
@@ -28,7 +28,7 @@ def launch_training(cfg_file):
 
     sess = tf.Session()
 
-    placeholders, loss_op, train_op, first_step = load(
+    placeholders, loss_op, train_op, first_step = load_training(
         sess, meta, ckpt_folder="saved")
     saver = tf.train.Saver()
 

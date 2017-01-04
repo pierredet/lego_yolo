@@ -1,8 +1,11 @@
-import tensorflow as tf
 import sys
+import os
+import cPickle as pkl
+
+import tensorflow as tf
+
 from loss import loss
 from tiny_yolo import create_graph
-import cPickle as pkl
 
 
 def graph_construction(sess, meta, pkl_path=None):
