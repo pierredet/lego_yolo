@@ -13,7 +13,7 @@ def _fix(obj, dims, scale, offs):
         obj[i] = max(min(obj[i], dim), 0)
 
 
-def preprocess(im, meta, allobj=None):
+def preprocess(im, inp_size, allobj=None):
     """
     Takes an image, return it as a numpy tensor that is readily
     to be fed into tfnet. If there is an accompanied annotation (allobj),
@@ -38,7 +38,7 @@ def preprocess(im, meta, allobj=None):
             obj[3] = dims[0] - obj_1_
         im = imcv2_recolor(im)
 
-    h, w, c = meta['inp_size']
+    h, w, c = inp_size
     imsz = cv2.resize(im, (h, w))
     imsz = imsz / 255.
     imsz = imsz[:, :, ::-1]
@@ -141,5 +141,7 @@ def postprocess(net_out, im, meta, save=True):
     if not save:
         return imgcv
     outfolder = 'out'
+    if not os.path.isdir(outfolder):
+        os.mkdir(outfolder)
     img_name = os.path.join(outfolder, im.split('/')[-1])
     cv2.imwrite(img_name, imgcv)
