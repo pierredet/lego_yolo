@@ -31,7 +31,7 @@ def max_pool(inp, ksize, stride, name):
 
 
 def fully_connected(inp, weights, biases, name):
-    return  tf.nn.xw_plus_b(inp, weights, biases,	name)
+    return tf.nn.xw_plus_b(inp, weights, biases, name)
 
 
 def create_graph(inp_size):
@@ -131,13 +131,33 @@ def create_graph(inp_size):
     temp = tf.nn.dropout(temp, keep_prob, name="28_drop")
     # Init  |  Yep!  | full 4096 x 1470  linear         | (?, 1470)
 
-    # TRANSFER LEARNING HERE
-    weights = tf.Variable(tf.truncated_normal([4096, 735], stddev=0.1),
+    # TRANSFER LEARNING HERE TODO find out why 5 classes 735 and 12 -> 1078
+    weights = tf.Variable(tf.truncated_normal([4096, 1078], stddev=0.1),
                           name="30-connected/weights")
-    biases = tf.Variable(tf.constant(0.1, shape=[735]),
+    biases = tf.Variable(tf.constant(0.1, shape=[1078]),
                          name="30-connected/biases")
     all_vars.append(weights)
     all_vars.append(biases)
     temp = fully_connected(temp, weights, biases, "29_fully_connected")
 
     return temp, all_vars, [inp, keep_prob]
+
+
+def locate_layer(inp, pad, kernel):
+    pad = [[pad, pad]] * 2
+    temp = tf.pad(inp, [[0, 0]] + pad + [[0, 0]])
+
+    ksz = self.lay.ksize
+    half = ksz/2
+    out = list()
+    for i in range(self.lay.h_out):
+        row_i = list()
+        for j in range(self.lay.w_out):
+            kij = kernel[i * self.lay.w_out + j]
+            i_, j_ = i + 1 - half, j + 1 - half
+            tij = temp[:, i_: i_ + ksz, j_: j_ + ksz, :]
+            row_i.append(tf.nn.conv2d(tij, kij, padding='VALID',
+                                      strides=[1] * 4))
+            out += [tf.concat(2, row_i)]
+
+    return tf.concat(1, out)

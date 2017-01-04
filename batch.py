@@ -4,6 +4,7 @@ from image_processing import preprocess
 import os
 from copy import deepcopy
 
+
 def shuffle(data, batch_size, epoch, meta):
     """
     data, parsed annotations (stored in a pkl)
@@ -66,7 +67,7 @@ def batch(chunk, meta):
     allobj = deepcopy(allobj_)
     par_path =os.path.abspath(os.path.join(meta['ann_path'], os.pardir))
     path = os.path.join(par_path, "images", jpg + ".jpg")
-    img = preprocess(path, meta, allobj)
+    img = preprocess(path, meta['inp_size'], allobj)
 
     # Calculate regression target
     cellx = 1. * w / S

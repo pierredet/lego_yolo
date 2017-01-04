@@ -1,45 +1,21 @@
 from batch import shuffle, batch
 from loss import loss
-from load import graph_construction
+from load import load
 
 from utils.pascal_voc_clean_xml import parse_to_pkl
+from utils.read_config import read_cfg(cfg_file)
 
 import cPickle as pkl
 import sys
 import os
-import ConfigParser
 import numpy as np
 
 import tensorflow as tf
 
 
 def launch_training(cfg_file):
-    cfg = ConfigParser.ConfigParser()
-    cfg.read(cfg_file)
-
-    ann_path = cfg.get('general', 'ann_path')
-    ckpt_path = cfg.get('general', 'ckpt_path')
-    labels = cfg.get('general', 'labels').split()
-    exclusive = cfg.getboolean('general', 'exclusive')
-
-    batch = cfg.getint('net', 'batch')
-    epoch = cfg.getint('general', 'epoch')
-    lr = cfg.getfloat('general', 'learning_rate')
-    save_iter = cfg.getint('general', 'save_iter')
-
-    # load detection metaparameter from the config file
-    meta = {}
-    for key, value in cfg.items('detection'):
-        if '.' in value:
-            meta[key] = float(value)
-        else:
-            meta[key] = int(value)
-    meta['inp_size'] = [cfg.getint('net', 'height'), cfg.getint('net', 'width'),
-                        cfg.getint('net', 'channels')]
-    meta['labels'] = labels
-    meta['lr'] = lr
-    meta['model'] = ann_path.split('/')[-1]
-    meta['ann_path'] = ann_path
+    ann_path, ckpt_path, labels, exclusive, batch, epoch, lr, save_iter, \
+        meta = read_cfg(cfg_file)
 
     # First check if there is a corresponding annotation
     # parse to your config
@@ -51,13 +27,10 @@ def launch_training(cfg_file):
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
     sess = tf.Session()
-    placeholders, loss_op, train_op = graph_construction(sess, meta,
-                                                     pkl_path="weight.pkl")
 
-    # build train_op
-    #optimizer = tf.train.RMSPropOptimizer(meta['lr'])
-    #gradients = optimizer.compute_gradients(loss)
-    #train_op = optimizer.apply_gradients(gradients)
+    placeholders, loss_op, train_op, first_step = load(
+        sess, meta, ckpt_folder="saved")
+    saver = tf.train.Saver()
 
     # actual training loop
     batches = shuffle(data, batch, epoch, meta)
@@ -82,18 +55,18 @@ def launch_training(cfg_file):
 
         _, loss = sess.run([train_op, loss_op], feed_dict)
 
-        #train_writer.add_summary(summary, i)
+        # train_writer.add_summary(summary, i)
 
         if loss_mva is None:
             loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
         # counter from now on
-        step_now = 0 + i
+        step_now = first_step + i
         args = [step_now, loss, loss_mva]
         print 'step {} - loss {} - moving ave loss {}'.format(*args)
         if i % (save_iter / batch) == 0 or i == total:
-            ckpt = os.path.join(self.FLAGS.backup, '{}-{}'.format(
-                model, step_now))
+            ckpt = os.path.join("saved", '{}-{}'.format(
+                ann_path.split('/')[-1], step_now))
             print 'Checkpoint at step {}'.format(step_now)
             saver.save(sess, ckpt)
 
