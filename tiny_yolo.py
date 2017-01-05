@@ -127,7 +127,7 @@ def create_graph(inp_size):
 
     # Load  |  Yep!  | drop                             | (?, 4096)
     # dropout
-    keep_prob = tf.placeholder(tf.float32)
+    keep_prob = tf.placeholder(tf.float32, name='input')  # NOm debile !
     temp = tf.nn.dropout(temp, keep_prob, name="28_drop")
     # Init  |  Yep!  | full 4096 x 1470  linear         | (?, 1470)
 

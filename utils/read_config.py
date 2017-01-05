@@ -6,6 +6,7 @@ def read_cfg(cfg_file):
     cfg.read(cfg_file)
 
     ann_path = cfg.get('general', 'ann_path')
+    val_ann_path = cfg.get('general', 'val_ann_path')
     ckpt_path = cfg.get('general', 'ckpt_path')
     labels = cfg.get('general', 'labels').split()
     exclusive = cfg.getboolean('general', 'exclusive')
@@ -29,6 +30,6 @@ def read_cfg(cfg_file):
     meta['lr'] = lr
     meta['model'] = ann_path.split('/')[-1]
     meta['ann_path'] = ann_path
-    tu = (ann_path, ckpt_path, labels, exclusive, batch, epoch, lr, save_iter,
-          meta)
+    tu = (ann_path, val_ann_path, ckpt_path, labels, exclusive, batch, epoch,
+          lr, save_iter, meta)
     return tu

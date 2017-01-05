@@ -1,16 +1,17 @@
 [general]
-ann_path=pascal/VOCdevkit/annex
+ann_path=/home/pierre/lego-assembly-helper/dataset/output_dataset/annotations
+val_ann_path=/home/pierre/lego-assembly-helper/validation/annotations
 # path from which to load pascal yolo weights
-ckpt_path=ckpt/yolo-tiny-664.meta
-labels=un deux trois
+ckpt_path=ckpt/yolo-tiny-166.meta
+labels=baseblock5 baseblock6 baseblock1 baseblock15 baseblock7 baseblock16 baseblock10 baseblock4 baseblock18 baseblock3 baseblock9 baseblock17
 exclusive=True
 epoch=1000
 learning_rate=1e-5
 # save every iter
-save_iter=10000
+save_iter=640
 
 [net]
-batch=64
+batch=50
 subdivisions=64
 height=448
 width=448

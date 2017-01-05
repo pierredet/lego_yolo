@@ -14,8 +14,8 @@ import tensorflow as tf
 
 
 def launch_training(cfg_file):
-    ann_path, ckpt_path, labels, exclusive, batch, epoch, lr, save_iter, \
-        meta = read_cfg(cfg_file)
+    ann_path, val_ann_path, ckpt_path, labels, exclusive, batch, epoch, lr,\
+        save_iter, meta = read_cfg(cfg_file)
 
     # First check if there is a corresponding annotation
     # parse to your config
@@ -31,7 +31,10 @@ def launch_training(cfg_file):
     placeholders, loss_op, train_op, first_step = load_training(
         sess, meta, ckpt_folder="saved")
     saver = tf.train.Saver()
-
+    merged = tf.summary.merge_all()
+    train_writer = tf.train.SummaryWriter("out" + '/train',
+                                          sess.graph)
+    # test_writer = tf.train.SummaryWriter(FLAGS.summaries_dir + '/test')
     # actual training loop
     batches = shuffle(data, batch, epoch, meta)
     loss_mva = None
@@ -53,9 +56,9 @@ def launch_training(cfg_file):
         feed_pair = [(placeholders[k], datum[k]) for k in datum]
         feed_dict = {holder: val for (holder, val) in feed_pair}
 
-        _, loss = sess.run([train_op, loss_op], feed_dict)
+        summary, _, loss = sess.run([merged, train_op, loss_op], feed_dict)
 
-        # train_writer.add_summary(summary, i)
+        train_writer.add_summary(summary, i)
 
         if loss_mva is None:
             loss_mva = loss
