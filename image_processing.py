@@ -50,6 +50,11 @@ def preprocess(im, inp_size, allobj=None):
 def postprocess(net_out, im, meta, save=True):
     """
     Takes net output, draw predictions, save to disk
+    Args:
+         - net_out (np vector) output of the last layer
+         - im (file path to the input image or np array)
+             (we draw the bb on the input image)
+         - save the result to a file or display with openCV
     """
 
     def _to_color(indx, base):
@@ -69,11 +74,12 @@ def postprocess(net_out, im, meta, save=True):
     C, B, S = meta['classes'], meta['num'], meta['side']
     colors, labels = meta['colors'], meta['labels']
 
+    # Here we divide the output vector
+    # into class probabilities, confidence and cords
     boxes = []
     SS = S * S  # number of grid cells
     prob_size = SS * C  # class probabilities
     conf_size = SS * B  # confidences for each grid cell
-    # net_out = net_out[0]
     probs = net_out[0: prob_size]
     confs = net_out[prob_size: (prob_size + conf_size)]
     cords = net_out[(prob_size + conf_size):]
@@ -81,6 +87,7 @@ def postprocess(net_out, im, meta, save=True):
     confs = confs.reshape([SS, B])
     cords = cords.reshape([SS, B, 4])
 
+    # define the bounding boxes
     for grid in range(SS):
         for b in range(B):
             bx = BoundBox(C)
@@ -107,7 +114,8 @@ def postprocess(net_out, im, meta, save=True):
                 boxj = boxes[j]
                 if box_iou(boxi, boxj) >= .4:
                     boxes[j].probs[c] = 0.
-
+    # Starting from here we add the actual boxes with 
+    # nice color on a picture to display or to save.
     if type(im) is not np.ndarray:
         imgcv = cv2.imread(im)
     else:
