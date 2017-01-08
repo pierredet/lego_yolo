@@ -4,6 +4,7 @@ import cPickle as pkl
 
 import tensorflow as tf
 from tensorflow.python.framework import graph_util
+from tensorflow.contrib.layers.python.layers.optimizers import optimize_loss
 
 from loss import loss
 from tiny_yolo import create_graph
@@ -17,10 +18,26 @@ def graph_construction(sess, meta, pkl_path=None):
     placeholders['input'] = inp
     placeholders['keep_prob'] = keep_prob
 
-    # construct the training loop
-    optimizer = tf.train.RMSPropOptimizer(meta['lr'])
-    gradients = optimizer.compute_gradients(loss_layer)
-    train_op = optimizer.apply_gradients(gradients)
+    batch = tf.Variable(0)
+
+    learning_rate = tf.train.exponential_decay(
+        meta['lr'],                # Base learning rate.
+        batch * meta['batch'],  # Current index into the dataset.
+        30000,          # Decay step.
+        0.95,                # Decay rate.
+        staircase=True)
+    # # add a summary
+    tf.summary.scalar('learning_rate', learning_rate)
+    #
+    # # construct the training loop
+    # optimizer = tf.train.RMSPropOptimizer(learning_rate)
+    # gradients = optimizer.compute_gradients(loss_layer)
+    # train_op = optimizer.apply_gradients(gradients, global_step=batch)
+
+    train_op = optimize_loss(loss_layer,
+                             batch,
+                             learning_rate,
+                             "RMSProp")
 
     sess.run(tf.global_variables_initializer())
 

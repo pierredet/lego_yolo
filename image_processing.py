@@ -114,7 +114,7 @@ def postprocess(net_out, im, meta, save=True):
                 boxj = boxes[j]
                 if box_iou(boxi, boxj) >= .4:
                     boxes[j].probs[c] = 0.
-    # Starting from here we add the actual boxes with 
+    # Starting from here we add the actual boxes with
     # nice color on a picture to display or to save.
     if type(im) is not np.ndarray:
         imgcv = cv2.imread(im)

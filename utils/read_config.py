@@ -28,8 +28,10 @@ def read_cfg(cfg_file):
                         cfg.getint('net', 'channels')]
     meta['labels'] = labels
     meta['lr'] = lr
+    meta['batch'] = batch
     meta['model'] = ann_path.split('/')[-1]
     meta['ann_path'] = ann_path
+
     tu = (ann_path, val_ann_path, ckpt_path, labels, exclusive, batch, epoch,
           lr, save_iter, meta)
     return tu

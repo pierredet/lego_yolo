@@ -1,5 +1,6 @@
 # weights
 *.pkl
+*.pb
 
 # python cache
 *.pyc
@@ -12,3 +13,6 @@ pascal/
 out/
 saved/
 ckpt/
+
+# Archive
+*.tar.gz

@@ -132,9 +132,9 @@ def create_graph(inp_size):
     # Init  |  Yep!  | full 4096 x 1470  linear         | (?, 1470)
 
     # TRANSFER LEARNING HERE TODO find out why 5 classes 735 and 12 -> 1078
-    weights = tf.Variable(tf.truncated_normal([4096, 1078], stddev=0.1),
+    weights = tf.Variable(tf.truncated_normal([4096, 539], stddev=0.1),
                           name="30-connected/weights")
-    biases = tf.Variable(tf.constant(0.1, shape=[1078]),
+    biases = tf.Variable(tf.constant(0.1, shape=[539]),
                          name="30-connected/biases")
     all_vars.append(weights)
     all_vars.append(biases)
