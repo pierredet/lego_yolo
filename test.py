@@ -28,12 +28,14 @@ def test(cfg_file, graph_filename, img_path):
     net_out = graph.get_tensor_by_name(u'prefix/29_fully_connected:0')
 
     with tf.Session(graph=graph) as sess:
+
         start = time.time()
         out = sess.run(net_out[0], {inp: expanded, keep_prob: 1})
 
         stop = time.time()
 
         print('Total time = {}s'.format(stop - start))
+
 
         postprocess(out, img_path, meta)
 

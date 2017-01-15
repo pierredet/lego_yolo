@@ -5,7 +5,7 @@ import os
 from copy import deepcopy
 
 
-def shuffle(data, batch_size, epoch, meta):
+def shuffle(data, batch_size, epoch, meta, path):
     """
     data, parsed annotations (stored in a pkl)
     Call the specific framework to parse annotations, then use the parsed
@@ -34,7 +34,7 @@ def shuffle(data, batch_size, epoch, meta):
             for j in range(start_idx, end_idx):
                 real_idx = shuffle_idx[j]
                 chunk = data[real_idx]
-                inp, feedval = batch(chunk, meta)
+                inp, feedval = batch(chunk, meta, path)
                 if inp is None:
                     continue
 
@@ -50,7 +50,7 @@ def shuffle(data, batch_size, epoch, meta):
             yield (x_batch, feed_batch)
 
 
-def batch(chunk, meta):
+def batch(chunk, meta, path):
     """
     Takes a chunk of parsed annotations
     and a dictionnary of the data-set specific meta parameters
@@ -65,7 +65,7 @@ def batch(chunk, meta):
     jpg = chunk[0]
     w, h, allobj_ = chunk[1]
     allobj = deepcopy(allobj_)
-    par_path =os.path.abspath(os.path.join(meta['ann_path'], os.pardir))
+    par_path =os.path.abspath(os.path.join(path, os.pardir))
     path = os.path.join(par_path, "images", jpg + ".jpg")
     img = preprocess(path, meta['inp_size'], allobj)
 

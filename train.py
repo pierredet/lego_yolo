@@ -26,6 +26,16 @@ def launch_training(cfg_file):
     else:
         data = parse_to_pkl(labels, ann_parsed, ann_path, exclusive=exclusive)
 
+    # Similar thing for validation loss
+    val_ann_parsed = os.path.join(val_ann_path,
+                                  cfg_file.split('.')[0] + '.pkl')
+    if os.path.exists(val_ann_parsed):
+        f = open(val_ann_parsed, 'rb')
+        val = pkl.load(f)[0]
+    else:
+            val = parse_to_pkl(labels, val_ann_parsed, val_ann_path,
+                               exclusive=exclusive)
+
     sess = tf.Session()
 
     placeholders, loss_op, train_op, first_step = load_training(
@@ -34,14 +44,17 @@ def launch_training(cfg_file):
     merged = tf.summary.merge_all()
     train_writer = tf.train.SummaryWriter("out" + '/train',
                                           sess.graph)
-    # test_writer = tf.train.SummaryWriter(FLAGS.summaries_dir + '/test')
+    test_writer = tf.train.SummaryWriter("out" + '/test',
+                                         sess.graph)
     # actual training loop
-    batches = shuffle(data, batch, epoch, meta)
+    batches = shuffle(data, batch, epoch, meta, ann_path)
+    val_batches = shuffle(val, batch, epoch, meta, val_ann_path)
     loss_mva = None
     total = int()  # total number of batches
     for i, packet in enumerate(batches):
         if i == 0:
             total = packet
+            total_val = next(val_batches)
             args = [lr, batch]
             args += [epoch, save_iter]
             print "training params", args
@@ -72,6 +85,21 @@ def launch_training(cfg_file):
                 ann_path.split('/')[-1], step_now))
             print 'Checkpoint at step {}'.format(step_now)
             saver.save(sess, ckpt)
+
+        if i % 100 == 0:
+            # validation step
+            x_batch, datum = next(val_batches)
+            datum['input'] = x_batch
+            datum['keep_prob'] = 1
+            if i/100 == 0:
+                assert set(list(datum)) == set(list(placeholders)), \
+                    'Feed and placeholders of loss op mismatched'
+            feed_pair = [(placeholders[k], datum[k]) for k in datum]
+            feed_dict = {holder: val for (holder, val) in feed_pair}
+
+            summary, loss = sess.run([merged, loss_op], feed_dict)
+
+            test_writer.add_summary(summary, i)
 
 
 if __name__ == '__main__':

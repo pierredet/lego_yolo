@@ -55,26 +55,26 @@ def graph_construction(sess, meta, pkl_path=None):
 
 
 def load_training(sess, meta, ckpt_folder="saved"):
-    if len(os.listdir(ckpt_folder)) > 0:
-
-        # recreate tf graph
-        placeholders, loss_op, train_op = graph_construction(
-            sess, meta, pkl_path=None)
-
-        new_saver = tf.train.import_meta_graph(
-            tf.train.latest_checkpoint(ckpt_folder) + ".meta")
-
-        # taking trace of first index
-        first_step = int(
-            tf.train.latest_checkpoint(ckpt_folder).split('-')[-1])
-        print("load from checkpoint {:d}".format(first_step))
-        # restore variable values
-        new_saver.restore(sess, tf.train.latest_checkpoint(ckpt_folder))
-    else:
-        first_step = 0
-        # load values from pkl for transfer learning
-        placeholders, loss_op, train_op = graph_construction(
-            sess, meta, pkl_path="weight.pkl")
+    # if len(os.listdir(ckpt_folder)) > 0:
+    #
+    #     # recreate tf graph
+    #     placeholders, loss_op, train_op = graph_construction(
+    #         sess, meta, pkl_path=None)
+    #
+    #     new_saver = tf.train.import_meta_graph(
+    #         tf.train.latest_checkpoint(ckpt_folder) + ".meta")
+    #
+    #     # taking trace of first index
+    #     first_step = int(
+    #         tf.train.latest_checkpoint(ckpt_folder).split('-')[-1])
+    #     print("load from checkpoint {:d}".format(first_step))
+    #     # restore variable values
+    #     new_saver.restore(sess, tf.train.latest_checkpoint(ckpt_folder))
+    # else:
+    first_step = 0
+    # load values from pkl for transfer learning
+    placeholders, loss_op, train_op = graph_construction(
+        sess, meta, pkl_path="weight.pkl")
     return placeholders, loss_op, train_op, first_step
 
 
